@@ -1,0 +1,15 @@
+
+[currentSection="home"] > :not(#home),
+[currentSection="playersSetup_section"] > :not(#playersSetup_section),
+[currentSection="scoreBoard_section"] > :not(#scoreBoard_section),
+[currentSection="sessionList_section"] > :not(#sessionList_section),
+[currentSection="sessionDetails_section"] > :not(#sessionDetails_section)  {
+    display:none!important
+}
+
+div.noSession #home button:not(.noSession),
+div.hasSession #home button:not(.hasSession),
+div[currentSection="scoreBoard_section"] #home button.notfor_scoreBoard_section,
+div[currentSection="sessionList_section"] #home button.notfor_sessionList_section {
+    display:none
+}
