@@ -18,8 +18,8 @@
         <div class="row justify-content-center">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header"><h1>Score Board</h1></div>
-                    <div id="container" class="card-body noSession" currentSection="home">
+                    <div class="card-header"><b>Score Board</b> 0.1</div>
+                    <div id="container" class="card-body px-0 py-2 noSession" currentSection="home">
 
                         <div id="home" class="d-grid gap-2 col-sm-12 col-md-6 mx-auto">
                             <button type="button" id="playersSetup_button" class="hasSession noSession btn btn-primary">Setup Players</button>
@@ -95,12 +95,13 @@
                             </div>
                             <div class="row mt-2">
                                 <div class="col">
-                                    <table id="gameBoard" class="table tabled-bordered border-primary table-striped">
+                                    <table id="gameBoard" winnerSelected="false" class="table tabled-bordered border-primary table-striped">
                                         <thead>
                                             <tr>
+                                                <th width="10%">Winner</th>
                                                 <th>Player</th>
-                                                <th>Bonus</th>
                                                 <th>Points</th>
+                                                <th>Bonus</th>
                                                 <th>Credit</th>
                                             </tr>
                                         </thead>
@@ -112,6 +113,8 @@
                             <div class="row">
                                 <div class="col">
                                     <button type="button" id="resetGame_button" class="btn btn-success">Reset Scores</button>
+                                </div>
+                                <div class="col">
                                     <button type="button" id="nextGame_button" class="btn btn-success">Game Finished</button>
                                 </div>
                             </div>

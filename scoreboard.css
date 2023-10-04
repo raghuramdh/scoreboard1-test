@@ -13,3 +13,13 @@ div[currentSection="scoreBoard_section"] #home button.notfor_scoreBoard_section,
 div[currentSection="sessionList_section"] #home button.notfor_sessionList_section {
     display:none
 }
+
+tr.winner .gameBoard_points,
+#gameBoard tbody tr:not(.winner) img.winner_logo {
+    display:none
+}
+
+#gameBoard[winnerSelected="false"] tbody .gameBoard_points,
+#gameBoard[winnerSelected="false"] tbody .gameBoard_bonus {
+    display:none
+}

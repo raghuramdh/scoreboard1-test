@@ -9,7 +9,8 @@ $(document).ready(function(){
     $('body').on('click', '.deletePlayer_button', deletePlayer); 
     $('#sessionList').on('click', 'td', viewSessionDetails);
     $('#gameBoard').on('change', '.gameBoard_bonus', calculateCreditOnBonusChange);
-    $('#gameBoard').on('change', '.gameBoard_points', calculateCreditOnPointsChange);
+    $('#gameBoard').on('change', '.gameBoard_points', onPointsChange);
+    $('#gameBoard').on('click', '.scoreCard_winner', setWinner);
     //init();
 });
 
@@ -146,12 +147,28 @@ function newGame() {
 function addScoreCard(scoreCard) {
     $('#gameBoard > tbody').append(
         '<tr id="scoreCard_'+scoreCard.player.id+'">'
+            +'<td><input type="radio" name="scoreCard_winner" class="scoreCard_winner"/></td>'
             +'<td>'+scoreCard.player.name+'</td>'
-            +'<td><input type="text" size="4" class="gameBoard_bonus" id="gameBoard_bonus_'+scoreCard.player.id+'"/></td>'
-            +'<td><input type="text" size="4" class="gameBoard_points" id="gameBoard_points_'+scoreCard.player.id+'"/></td>'
+            +'<td>'
+                +'<input type="text" size="3" class="gameBoard_points" id="gameBoard_points_'+scoreCard.player.id+'"/>'
+                +'<img src="./trophy-32.png" alt="Winner" class="winner_logo" />'
+            +'</td>'
+            +'<td><input type="text" size="3" class="gameBoard_bonus" id="gameBoard_bonus_'+scoreCard.player.id+'"/></td>'
             +'<td id="gameBoard_gameCredit_'+scoreCard.player.id+'">'+scoreCard.gameCredit+'</td>'
         +'</tr>'
     );
+}
+
+function setWinner() {
+    var id = $(this).parents('tr').attr('id').replace('scoreCard_', '');
+    if(app.curSession.curGame.winner) {
+        $('#scoreCard_'+app.curSession.curGame.winner).removeClass('winner');
+    }
+    app.curSession.curGame.winner = id;
+    $('#scoreCard_'+id).addClass('winner');
+    $('#gameBoard_points_'+id).val('');
+    $('#gameBoard').attr('winnerSelected','true');
+    calculateCreditOnPointsChange(id);
 }
 
 function calculateCreditOnBonusChange() {
@@ -166,12 +183,16 @@ function calculateCreditOnBonusChange() {
     calculateCredit();
 }
 
-function calculateCreditOnPointsChange() {
+function onPointsChange() {
     var id = $(this).attr('id').replace('gameBoard_points_', '');
+    calculateCreditOnPointsChange(id);
+}
+
+function calculateCreditOnPointsChange(id) {
     var cards = app.curSession.curGame.scoreCards;
     for(var i in cards) {
         if(cards[i].player.id == id) {
-            cards[i].points = Number($(this).val());
+            cards[i].points = Number($('#gameBoard_points_'+id).val());
             break;
         }
     }
@@ -188,7 +209,7 @@ function calculateCredit() {
                 continue;
             }
             bcredit += (isEmpty(cards[i].bonus)?0:cards[i].bonus) - (isEmpty(cards[j].bonus)?0:cards[j].bonus);
-            if(!isEmpty(cards[i].points) && cards[i].points == 0) {
+            if(cards[i].player.id == app.curSession.curGame.winner) {
                 pcredit += isEmpty(cards[j].points)?0:cards[j].points;
             }
         }
@@ -206,13 +227,17 @@ function isEmpty(val) {
 
 function resetGame() {
     var cards = app.curSession.curGame.scoreCards;
+    app.curSession.curGame.winner=null;
     for(var i in cards) {
         cards[i].bonus = null;
         cards[i].points = null;
         $('#gameBoard_bonus_'+cards[i].player.id).val(null);
         $('#gameBoard_points_'+cards[i].player.id).val(null);
         $('#gameBoard_gameCredit_'+cards[i].player.id).text(cards[i].gameCredit);
+        $('#scoreCard_'+cards[i].player.id).removeClass('winner');
     }
+    $('#gameBoard input[type="radio"]').prop("checked", false);
+    $('#gameBoard').attr('winnerSelected','false');
     calculateCredit();
 }
 
@@ -227,16 +252,9 @@ function nextGame() {
 
 function validateGame() {
     var cards = app.curSession.curGame.scoreCards;
-    var winnerFound = false;
     for(var i in cards) {
         if(isEmpty(cards[i].bonus) || isEmpty(cards[i].points)) {
             return false;
-        }
-        if(cards[i].points == 0 && winnerFound) {
-            return false;
-        }
-        if(cards[i].points == 0 && !winnerFound) {
-            winnerFound = true;
         }
     }
     return true;
