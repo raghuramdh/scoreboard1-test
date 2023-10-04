@@ -8,8 +8,8 @@ $(document).ready(function(){
     $('#addPlayer_button').click(addPlayer);
     $('body').on('click', '.deletePlayer_button', deletePlayer); 
     $('#sessionList').on('click', 'td', viewSessionDetails);
-    $('#gameBoard').on('change', '.gameBoard_bonus', calculateCreditOnBonusChange);
-    $('#gameBoard').on('change', '.gameBoard_points', onPointsChange);
+    $('#gameBoard').on('input', '.gameBoard_bonus', calculateCreditOnBonusChange);
+    $('#gameBoard').on('input', '.gameBoard_points', onPointsChange);
     $('#gameBoard').on('click', '.scoreCard_winner', setWinner);
     //init();
 });
@@ -148,7 +148,7 @@ function addScoreCard(scoreCard) {
     $('#gameBoard > tbody').append(
         '<tr id="scoreCard_'+scoreCard.player.id+'">'
             +'<td><input type="radio" name="scoreCard_winner" class="scoreCard_winner"/></td>'
-            +'<td>'+scoreCard.player.name+'</td>'
+            +'<td style="text-align:left">'+scoreCard.player.name+'</td>'
             +'<td>'
                 +'<input type="text" size="3" class="gameBoard_points" id="gameBoard_points_'+scoreCard.player.id+'"/>'
                 +'<img src="./trophy-32.png" alt="Winner" class="winner_logo" />'
@@ -297,14 +297,18 @@ function viewSessionDetails() {
         }
         var gameTable = '<table class="table tabled-bordered border-primary table-striped caption-top">'
                         +'<caption>'+game.name+'</caption>'
-                            +'<thead><tr><th>Player</th><th>Bonus</th><th>Points</th><th>Credit</th></tr></thead>'
+                            +'<thead><tr><th>Player</th>'
+                            //+'<th>Bonus</th><th>Points</th>'
+                            +'<th>Credit</th></tr></thead>'
                             +'<tbody>';
         for(var c in game.scoreCards) {
             var card = game.scoreCards[c];
             gameTable += ('<tr>'
-                            +'<td>'+card.player.name+'</td>'
-                            +'<td>'+card.bonus+'</td>'
-                            +'<td>'+card.points+'</td>'
+                            +'<td style="text-align:left">'+card.player.name
+                                +(game.winner == card.player.id?'<img src="./trophy-32.png" alt="Winner"/>':'')
+                            +'</td>'
+                            //+'<td>'+card.bonus+'</td>'
+                            //+'<td>'+card.points+'</td>'
                             +'<td>'+card.gameCredit+'</td>'
                         +'</tr>');
             if(!playerIdNameMap[card.player.id]) {
