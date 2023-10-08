@@ -3,12 +3,15 @@
 [currentSection="playersSetup_section"] > :not(#playersSetup_section),
 [currentSection="scoreBoard_section"] > :not(#scoreBoard_section),
 [currentSection="sessionList_section"] > :not(#sessionList_section),
-[currentSection="sessionDetails_section"] > :not(#sessionDetails_section)  {
+[currentSection="sessionDetails_section"] > :not(#sessionDetails_section),
+[currentSection="editGame_section"] > :not(#editGame_section),
+[currentSection="releaseNotes_section"] > :not(#releaseNotes_section)  {
     display:none!important
 }
 
 div.noSession #home button:not(.noSession),
 div.hasSession #home button:not(.hasSession),
+div.noSession #home div.onSession,
 div[currentSection="scoreBoard_section"] #home button.notfor_scoreBoard_section,
 div[currentSection="sessionList_section"] #home button.notfor_sessionList_section {
     display:none
@@ -19,7 +22,34 @@ tr.winner .gameBoard_points,
     display:none
 }
 
+tr.winner .editGameBoard_points,
+#editGameBoard tbody tr:not(.winner) img.winner_logo {
+    display:none
+}
+
 #gameBoard[winnerSelected="false"] tbody .gameBoard_points,
 #gameBoard[winnerSelected="false"] tbody .gameBoard_bonus {
     display:none
+}
+
+#editGameBoard[winnerSelected="false"] tbody .editGameBoard_points,
+#editGameBoard[winnerSelected="false"] tbody .editGameBoard_bonus {
+    display:none
+}
+
+#sessionDetails_section.session-closed button.editGame {
+    display:none
+}
+
+.table1 > :not(caption) >* >* {
+    padding-top: 0rem;
+    padding-bottom: 0rem;
+    padding-left: 0rem;
+    padding-right: 0rem;
+}
+
+#sessionDetails_section .card-header,
+#home .card-header,
+#playersSetup_section .card-header {
+    background-color: lightblue;
 }

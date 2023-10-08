@@ -18,38 +18,84 @@
         <div class="row justify-content-center">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header"><b>Score Board</b> 0.2</div>
+                    <div class="card-header"><b>Score Board</b> <a href="#" onclick="releaseNotes()">0.3</a></div>
                     <div id="container" class="card-body px-0 py-2 noSession" currentSection="home">
-
-                        <div id="home" class="d-grid gap-2 col-sm-12 col-md-6 mx-auto">
-                            <button type="button" id="playersSetup_button" class="hasSession noSession btn btn-primary">Setup Players</button>
-                            <button type="button" id="startSession_button" class="noSession hasSession btn btn-primary" disabled>Start New Session</button>
-                            <button type="button" id="sessionList_button" class="noSession hasSession btn btn-primary" disabled>Session History</button>
-                            <button type="button" id="backToGame_button"class="noSession hasSession btn btn-primary" disabled>Back to Game</button>
+                        <div class="container" id="home">
+                            <div class="row justify-content-center">
+                                <div class="col-sm-12 col-md-6 mb-2">
+                                    <div class="d-grid gap-2 mx-auto">
+                                        <button type="button" id="playersSetup_button" class="hasSession noSession btn btn-primary">Setup Players</button>
+                                        <button type="button" id="sessionList_button" class="noSession hasSession btn btn-primary" disabled>Session History</button>
+                                        <button type="button" id="startSession_button" class="noSession btn btn-primary" disabled>Start New Session</button>
+                                        <div class="card">
+                                            <div class="card-header">Kitty Credits</div>
+                                            <div class="card-body"><input type="text" id="home_kittyPoints" class="text" value="0" size="3" onchange="setKittyPoints()"/></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12 col-md-6 mb-2 onSession" id="home_currentSession">
+                                    <div class="card">
+                                        <div class="card-header" id="home_sessionHeader"></div>
+                                        <div class="card-body">
+                                            <div class="container">
+                                                <div class="row justify-content-center mb-2">
+                                                    <div class="col" id="home_sessionSummary">
+                                                        <!-- Place holder for Active Session Summary -->
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col px-0">
+                                                        <button type="button" class="btn btn-primary hasSession" onclick="closeSession()">Close</button>
+                                                        <button type="button" class="btn btn-primary hasSession" onclick="viewCurrentSessionDetails()">Details</button>
+                                                        <button type="button" class="btn btn-primary hasSession" onclick="playNextGame()">Next Game</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div id="playersSetup_section" class="container">
                             <div class="row">
-                                <div class="col-sm-12 col-md-6">
-                                    <div class="d-grid gap-2 col-sm-12 col-md-6 mx-auto">
-                                        <button type="button" class="btn btn-primary" onclick="goToHome()">Home</button>
-                                        <br/>
-                                        <span>Enter Player Name</span>
-                                        <input type="text" id="newPlayer_text"/>
-                                        <button type="button" class="btn btn-success" id="addPlayer_button">Add Player</button>
-                                    </div>
+                                <div class="col">
+                                    <nav id="playersSetup_title">
+                                        <ol class="breadcrumb">
+                                            <li class="breadcrumb-item"><a href="#" onclick="goToHome()">Home</a></li>
+                                            <li class="breadcrumb-item active">Setup Players</li>
+                                        </ol>
+                                    </nav>
                                 </div>
-                                <div class="col-sm-12 col-md-6">
-                                    <table id="playerNames" class="table tabled-bordered border-primary table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col">Players</th>
-                                                <th scope="col"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        </tbody>
-                                    </table>
+                            </div>
+                            <div class="row">
+                                <div class="col">
+                                    <div class="card">
+                                        <div class="card-header">Players</div>
+                                        <div class="card-body">
+                                            <div class="container">
+                                                <div class="row">
+                                                    <div class="d-grid gap-2 col-sm-12 col-md-6 mx-auto mb-4">
+                                                        <span>Enter Player Name</span>
+                                                        <input type="text" id="newPlayer_text"/>
+                                                        <button type="button" class="btn btn-primary" id="addPlayer_button">Add Player</button>
+                                                    </div>
+                                                    <div class="col-sm-12 col-md-6">
+                                                        <table id="playerNames" class="table tabled-bordered border-primary table-striped">
+                                                            <!--thead>
+                                                                <tr>
+                                                                    <th scope="col">Players</th>
+                                                                    <th scope="col"></th>
+                                                                </tr>
+                                                            </thead-->
+                                                            <tbody>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -57,13 +103,12 @@
                         <div id="sessionList_section" class="container">
                             <div class="row">
                                 <div class="col">
+                                    <nav id="sessionList_title"></nav>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-sm-12 col-md-6">
                                     <table id="sessionList" class="table tabled-bordered border-primary table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col">Session</th>
-                                                <th><button type="button" class="btn btn-primary" onclick="goToHome()">Home</button></th>
-                                            </tr>
-                                        </thead>
                                         <tbody>
                                         </tbody>
                                     </table>
@@ -73,33 +118,33 @@
             
                         <div id="sessionDetails_section" class="container">
                             <div class="row">
-                                <div class="col text-end">
-                                    <button type="button" class="btn btn-primary" onclick="goBackToSeesionList()">Back</button>
-                                    <button type="button" class="btn btn-primary" onclick="goToHome()">Home</button>
+                                <div class="col-sm-12 col-md-8">
+                                    <nav id="sessionDetails_title"></nav>
+                                </div>
+                                <div class="col-sm-12 col-md-3 text-end pb-2">
+                                    <button id="sessionDetails_reopen" type="button" class="btn btn-primary" onclick="reopenSession()">Reopen</button>
+                                    <button id="sessionDetails_play" type="button" class="btn btn-primary" onclick="playNextGame()">Next Game</button>
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="col" id="sessionDetails_games">
-                                </div>
+                            <div class="row justify-content-center mb-2" id="sessionDetails_summary">
+                            </div>
+                            <div class="row justify-content-center" id="sessionDetails_games">
                             </div>
                         </div>
             
                         <div class="container" id="scoreBoard_section">
-                            <div class="row justify-content-start">
-                                <div class="col-6 text-center">
-                                    <span id="scoreBoard_title"></span>
-                                </div>
-                                <div class="col-6 text-end">
-                                    <button type="button" class="btn btn-primary" onclick="goToHome()">Home</button>
+                            <div class="row">
+                                <div class="col">
+                                    <nav id="scoreBoard_title"></nav>
                                 </div>
                             </div>
-                            <div class="row mt-2">
+                            <div class="row">
                                 <div class="col">
                                     <table id="gameBoard" winnerSelected="false" class="table tabled-bordered border-primary table-striped">
                                         <thead>
                                             <tr>
                                                 <th width="10%">Winner</th>
-                                                <th>Player</th>
+                                                <th class="text-start">Player</th>
                                                 <th>Points</th>
                                                 <th>Bonus</th>
                                                 <th>Credit</th>
@@ -112,10 +157,72 @@
                             </div>
                             <div class="row">
                                 <div class="col">
-                                    <button type="button" id="resetGame_button" class="btn btn-success">Reset Scores</button>
+                                    <button type="button" id="resetGame_button" class="btn btn-primary">Reset Game</button>
                                 </div>
                                 <div class="col">
-                                    <button type="button" id="nextGame_button" class="btn btn-success">Game Finished</button>
+                                    <button type="button" id="nextGame_button" class="btn btn-primary">Game Over</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="container" id="editGame_section">
+                            <div class="row">
+                                <div class="col">
+                                    <h6 id="editScoreBoard_title"></h6>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col">
+                                    <table id="editGameBoard" winnerSelected="false" class="table tabled-bordered border-primary table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th width="10%">Winner</th>
+                                                <th class="text-start">Player</th>
+                                                <th>Points</th>
+                                                <th>Bonus</th>
+                                                <th>Credit</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col">
+                                    <button type="button" id="updateCancel_button" class="btn btn-primary">Cancel</button>
+                                    <button type="button" id="updateGame_button" class="btn btn-primary">Update Game</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="releaseNotes_section" class="container">
+                            <div class="row">
+                                <div class="col">
+                                    <nav id="sessionList_title">
+                                        <ol class="breadcrumb">
+                                            <li class="breadcrumb-item"><a href="#" onclick="goToHome()">Home</a></li>
+                                        </ol>
+                                    </nav>
+                                </div>
+                            </div>
+                            <div class="row justify-content-start">
+                                <div class="col">
+                                    <div class="card">
+                                        <div class="card-header">Release Notes</div>
+                                        <div class="card-body text-start">
+                                            <ol>
+                                                <li>Summary of current session available on Home screen.</li>
+                                                <li>Ability to view details/play next game/close current session from Home screen.</li>
+                                                <li>'Start New Session' will be enabled only when the current session is closed.</li>
+                                                <li>Reopen a closed session - open session details from session hisory and reopen. Once reopend that will be the current session.</li>
+                                                <li>Edit a completed game - Games from the current session can be edited. Go to details of the current session and edit any game required.</li>
+                                                <li>Default player Kitty is always added to every game.</li>
+                                                <li>Kitty points can be entered on the home screen.</li>
+                                                <li>Kitty points can be updated on a specific game as well. Once updated that will continue to the kitty points goign forward. The updated value will reflect on the home as well.</li>
+                                            </ol>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -2,35 +2,46 @@ $(document).ready(function(){
     $('#playersSetup_button').click(openPlayersSetup);
     $('#startSession_button').click(startNewSession);
     $('#sessionList_button').click(showSessionList);
-    $('#backToGame_button').click(backToGame);
     $('#resetGame_button').click(resetGame);
     $('#nextGame_button').click(nextGame);
+    $('#updateGame_button').click(updateGame);
+    $('#updateCancel_button').click(cancelUpdate);
     $('#addPlayer_button').click(addPlayer);
     $('body').on('click', '.deletePlayer_button', deletePlayer); 
     $('#sessionList').on('click', 'td', viewSessionDetails);
     $('#gameBoard').on('input', '.gameBoard_bonus', calculateCreditOnBonusChange);
     $('#gameBoard').on('input', '.gameBoard_points', onPointsChange);
+    $('#gameBoard').on('input', '#gameBoard_credits_0', onKittyCreditsChange);
     $('#gameBoard').on('click', '.scoreCard_winner', setWinner);
-    //init();
+    $('#editGameBoard').on('input', '.editGameBoard_bonus', onEditBonus);
+    $('#editGameBoard').on('input', '.editGameBoard_points', onEditPoints);
+    $('#editGameBoard').on('input', '#editGameBoard_credits_0', onEditKittyCredits);
+    init();
 });
 
 function init() {
-    $('#newPlayer_text').val('Raghu Ram');
+    $('#newPlayer_text').val('Kitty');
     addPlayer();
-    $('#newPlayer_text').val('Sirisha');
-    addPlayer();
+    //$('#newPlayer_text').val('Raghu Ram');
+    //addPlayer();
+    //$('#newPlayer_text').val('Sirisha');
+    //addPlayer();
 }
 
 function goToHome() {
     $('#container').attr('currentSection', 'home');
 }
 
-function backToGame() {
+function playNextGame() {
     $('#container').attr('currentSection', 'scoreBoard_section');
 }
 
 function openPlayersSetup() {
     $('#container').attr('currentSection', 'playersSetup_section');
+}
+
+function releaseNotes() {
+    $('#container').attr('currentSection', 'releaseNotes_section');
 }
 
 function addPlayer() {
@@ -51,14 +62,16 @@ function addPlayer() {
     players.push(player);
     app.nextPlayerId++;
 
-    if(players.length == 2) {
+    if(players.length == 3) {
         $('#startSession_button').removeAttr('disabled');
     }
 
     $('#playerNames > tbody').append(
         '<tr id="player_'+player.id+'">'
             +'<td>'+pname+'</td>'
-            +'<td><button type="button" class="deletePlayer_button">X</button></td>'
+            +'<td>'
+                +(player.id==0?'':'<button type="button" class="btn btn-danger deletePlayer_button">X</button>')
+            +'</td>'
         +'</tr>'
     );
     
@@ -107,15 +120,102 @@ function startNewSession() {
     var session = {};
     session.startTime = new Date();
     session.id = app.nextSessionId++;
-    session.name = session.startTime.toLocaleDateString('en-IN',{ year: 'numeric', month: 'short', day: 'numeric' }) + '[' + session.id + ']';
+    session.name = session.startTime.toLocaleDateString('en-IN',{ year: 'numeric', month: 'short', day: 'numeric' }) + ' - ' + session.id;
+    session.status = 'Open';
     session.games = [];
     app.curSession = session;
     app.sessions.push(session);
     newGame();
     $('#scoreBoard_sessionName').text(session.name);
-    $('#container').attr('currentSection', 'scoreBoard_section');
+    //$('#container').attr('currentSection', 'scoreBoard_section');
     $('#container').removeClass('noSession');
     $('#container').addClass('hasSession');
+}
+
+function closeSession() {
+    var session = app.curSession;
+    session.endTime = new Date();
+    session.status = 'Closed';
+    app.curSession = null;
+    $('#container').removeClass('hasSession');
+    $('#container').addClass('noSession');
+}
+
+function reopenSession() {
+    var sessionId = $('#sessionDetails_section').attr('sid');
+    var session = getSessionForId(sessionId);
+    if(app.curSession) {
+        app.curSession.status = 'Closed';
+    }
+    app.curSession = session;
+    session.status = 'Open';
+    newGame();
+    
+    $('#container').removeClass('noSession');
+    $('#container').addClass('hasSession');
+    $('#sessionDetails_reopen').hide();
+    $('#sessionDetails_play').show();
+    $('#sessionDetails_section').removeClass('session-closed');
+}
+
+function setKittyPoints() {
+    app.kittyPoints = Number($('#home_kittyPoints').val());
+    if(app.curSession) {
+        app.curSession.curGame.scoreCards[0].gameCredit = app.kittyPoints;
+        $('#gameBoard_credits_0').val(app.kittyPoints);
+        if(app.curSession.curGame.winner) {
+            calculateCredit();
+        }
+    }
+}
+
+function getGameForName(gameName) {
+    var session = app.curSession;
+    for(var g in session.games) {
+        if(session.games[g].name == gameName) {
+            return session.games[g];
+        }
+    }
+    return null;
+}
+
+function editGame(gameName) {
+    $('#editGameBoard > tbody').empty();
+    var game = getGameForName(gameName);
+    app.curSession.gameForEdit = cloneGame(game);
+    for(var c in game.scoreCards) {
+        addScoreCard(game.scoreCards[c], 'editGameBoard', game);
+    }
+    $('#editGameBoard').attr('winnerSelected','true');
+    //$('#editGameBoard').attr('gameForEdit',game.name);
+    $('#editScoreBoard_title').text('Edit Game: '+app.curSession.name+' / '+game.name);
+    $('#container').attr('currentSection', 'editGame_section');
+}
+
+function cloneGame(game) {
+    var g = {
+        'name': game.name,
+        'winner': game.winner,
+        'status': game.status,
+        'scoreCards': []
+    };
+    for(var c in game.scoreCards) {
+        g.scoreCards.push(cloneScoreCard(game.scoreCards[c]));
+    }
+    return g;
+}
+
+function cloneScoreCard(scoreCard) {
+    var sc = {
+        'points': scoreCard.points,
+        'bonus': scoreCard.bonus,
+        'gameCredit': scoreCard.gameCredit,
+        'player': {
+            'id': scoreCard.player.id,
+            'name': scoreCard.player.name
+        }
+    }
+    return sc;
 }
 
 function newGame() {
@@ -125,38 +225,80 @@ function newGame() {
         name: 'Game '+ (session.games.length+1),
         status: 'In Progress'
     }
+    if(session.curGame && session.curGame.status == 'In Progress') {
+        game = session.curGame;
+    } else {
+        session.curGame = game;
+        session.games.push(game);
+    }
     var scoreCards = [];
     for(var p in app.players) {
         var card = {};
         card.player = app.players[p];
-        card.gameCredit = 0;
+        card.points = null;
+        card.bonus = null;
+        if(app.players[p].id == 0) {
+            card.gameCredit = app.kittyPoints;
+        } else {
+            card.gameCredit = 0;
+        }
         scoreCards.push(card);
         addScoreCard(card);
     }
     game.scoreCards = scoreCards;
-    session.curGame = game;
-    session.games.push(game);
+    
     if(app.sessions.length == 1 && session.games.length == 1) {
-        $('#backToGame_button').removeAttr('disabled');
-    } else if(app.sessions.length == 1 && session.games.length == 2) {
         $('#sessionList_button').removeAttr('disabled');
     }
-    $('#scoreBoard_title').text(game.name);
+
+    $('#scoreBoard_title').empty();
+    $('#scoreBoard_title').append(
+            '<ol class="breadcrumb">'
+                +'<li class="breadcrumb-item"><a href="#" onclick="goToHome()">Home</a></li>'
+                +'<li class="breadcrumb-item"><a href="#" onclick="showSessionList()">Sessions</a></li>'
+                +'<li class="breadcrumb-item"><a href="#" onclick="viewDetailsOfSession(\''+session.id+'\')">'+session.name+'</a></li>'
+                +'<li class="breadcrumb-item active" aria-current="page">'+game.name+'</li>'
+            +'</ol>');
+    
+    refreshSessionSummaryOnHome()
+    $('#gameBoard').attr('winnerSelected','false');
 }
 
-function addScoreCard(scoreCard) {
-    $('#gameBoard > tbody').append(
-        '<tr id="scoreCard_'+scoreCard.player.id+'">'
-            +'<td><input type="radio" name="scoreCard_winner" class="scoreCard_winner"/></td>'
-            +'<td style="text-align:left">'+scoreCard.player.name+'</td>'
-            +'<td>'
-                +'<input type="text" size="3" class="gameBoard_points" id="gameBoard_points_'+scoreCard.player.id+'"/>'
-                +'<img src="./trophy-32.png" alt="Winner" class="winner_logo" />'
-            +'</td>'
-            +'<td><input type="text" size="3" class="gameBoard_bonus" id="gameBoard_bonus_'+scoreCard.player.id+'"/></td>'
-            +'<td id="gameBoard_gameCredit_'+scoreCard.player.id+'">'+scoreCard.gameCredit+'</td>'
-        +'</tr>'
-    );
+function refreshSessionSummaryOnHome() {
+    $('#home_sessionSummary').empty();
+    $('#home_sessionSummary').append(createSessionSummaryTable(app.curSession));
+    $('#home_sessionHeader').empty();
+    $('#home_sessionHeader').append(app.curSession.name + ' ( '+getGamesPlayed(app.curSession)+' Games )');
+}
+
+function addScoreCard(scoreCard, gameTableName, game) {
+    if(!gameTableName) {
+        gameTableName = 'gameBoard';
+    }
+    if(scoreCard.player.id == 0) {
+        $('#'+gameTableName+' > tbody').append(
+            '<tr id="scoreCard_'+scoreCard.player.id+'">'
+                +'<td></td>'
+                +'<td style="text-align:left">'+scoreCard.player.name+'</td>'
+                +'<td></td>'
+                +'<td></td>'
+                +'<td><input type="text" size="3" id="'+gameTableName+'_credits_0" value="'+scoreCard.gameCredit+'"/></td>'
+            +'</tr>'
+        );
+    } else {
+        $('#'+gameTableName+' > tbody').append(
+            '<tr id="scoreCard_'+scoreCard.player.id+'"'+(game && game.winner==scoreCard.player.id?' class="winner" ':'')+'>'
+                +'<td><input type="radio" name="scoreCard_winner" class="scoreCard_winner"'+(game && game.winner==scoreCard.player.id?' checked="true" ':'')+'/></td>'
+                +'<td style="text-align:left">'+scoreCard.player.name+'</td>'
+                +'<td>'
+                    +'<input type="text" size="3" class="'+gameTableName+'_points" id="'+gameTableName+'_points_'+scoreCard.player.id+'" value="'+(scoreCard.points==null?'':scoreCard.points)+'"/>'
+                    +'<img src="./trophy-32.png" alt="Winner" class="winner_logo" />'
+                +'</td>'
+                +'<td><input type="text" size="3" class="'+gameTableName+'_bonus" id="'+gameTableName+'_bonus_'+scoreCard.player.id+'" value="'+(scoreCard.bonus==null?'':scoreCard.bonus)+'"/></td>'
+                +'<td id="'+gameTableName+'_gameCredit_'+scoreCard.player.id+'">'+scoreCard.gameCredit+'</td>'
+            +'</tr>'
+        );
+    }
 }
 
 function setWinner() {
@@ -171,6 +313,19 @@ function setWinner() {
     calculateCreditOnPointsChange(id);
 }
 
+function onEditBonus() {
+    var id = $(this).attr('id').replace('editGameBoard_bonus_', '');
+    var game = app.curSession.gameForEdit; //getGameForName($('#editGameBoard').attr('gameForEdit'));
+    var cards = game.scoreCards;
+    for(var i in cards) {
+        if(cards[i].player.id == id) {
+            cards[i].bonus = Number($(this).val());
+            break;
+        }
+    }
+    calculateCreditForgame(game, true);
+}
+
 function calculateCreditOnBonusChange() {
     var id = $(this).attr('id').replace('gameBoard_bonus_', '');
     var cards = app.curSession.curGame.scoreCards;
@@ -181,6 +336,19 @@ function calculateCreditOnBonusChange() {
         }
     }
     calculateCredit();
+}
+
+function onEditPoints() {
+    var id = $(this).attr('id').replace('editGameBoard_points_', '');
+    var game = app.curSession.gameForEdit; //getGameForName($('#editGameBoard').attr('gameForEdit'));
+    var cards = game.scoreCards;
+    for(var i in cards) {
+        if(cards[i].player.id == id) {
+            cards[i].points = Number($('#editGameBoard_points_'+id).val());
+            break;
+        }
+    }
+    calculateCreditForgame(game, true);
 }
 
 function onPointsChange() {
@@ -199,17 +367,39 @@ function calculateCreditOnPointsChange(id) {
     calculateCredit();
 }
 
-function calculateCredit() {
-    var cards = app.curSession.curGame.scoreCards;
+function onEditKittyCredits() {
+    var credits = Number($(this).val());
+    var game = app.curSession.gameForEdit; //getGameForName($('#editGameBoard').attr('gameForEdit'));
+    game.scoreCards[0].gameCredit = credits;
+    calculateCreditForgame(game, true);
+}
+
+function onKittyCreditsChange() {
+    var credits = Number($(this).val());
+    app.kittyPoints = credits;
+    app.curSession.curGame.scoreCards[0].gameCredit = credits;
+    $('#home_kittyPoints').val(credits);
+    calculateCredit();
+}
+
+function calculateCreditForgame(game, isEdit) {
+    var kittyPoints = isEdit?Number($('#editGameBoard_credits_0').val()):app.kittyPoints;
+    var cards = game.scoreCards;
     for(var i in cards) {
+        if(i == 0) {
+            continue;
+        }
         var bcredit = 0;
         var pcredit = 0;
         for(var j in cards) {
+            if(j == 0) {
+                continue;
+            }
             if(cards[j].player.id == cards[i].player.id) {
                 continue;
             }
             bcredit += (isEmpty(cards[i].bonus)?0:cards[i].bonus) - (isEmpty(cards[j].bonus)?0:cards[j].bonus);
-            if(cards[i].player.id == app.curSession.curGame.winner) {
+            if(cards[i].player.id == game.winner) {
                 pcredit += isEmpty(cards[j].points)?0:cards[j].points;
             }
         }
@@ -217,8 +407,19 @@ function calculateCredit() {
             pcredit -= isEmpty(cards[i].points)?0:cards[i].points;
         }
         cards[i].gameCredit = bcredit + pcredit;
-        $('#gameBoard_gameCredit_'+cards[i].player.id).text(cards[i].gameCredit);
+        if(cards[i].player.id == game.winner && kittyPoints) {
+            cards[i].gameCredit -= kittyPoints
+        }
+        if(isEdit) {
+            $('#editGameBoard_gameCredit_'+cards[i].player.id).text(cards[i].gameCredit);
+        } else {
+            $('#gameBoard_gameCredit_'+cards[i].player.id).text(cards[i].gameCredit);
+        }
     }
+}
+
+function calculateCredit() {
+    calculateCreditForgame(app.curSession.curGame, false);
 }
 
 function isEmpty(val) {
@@ -242,22 +443,52 @@ function resetGame() {
 }
 
 function nextGame() {
-    if(validateGame()) {
+    if(validateGame(app.curSession.curGame)) {
         app.curSession.curGame.status = 'Done';
         newGame();
+        viewCurrentSessionDetails();
     } else {
         alert('Incomplete Score');
     }
 }
 
-function validateGame() {
-    var cards = app.curSession.curGame.scoreCards;
+function validateGame(game) {
+    var cards = game.scoreCards;
     for(var i in cards) {
+        if(i == 0) {
+            continue;
+        }
         if(isEmpty(cards[i].bonus) || isEmpty(cards[i].points)) {
             return false;
         }
     }
     return true;
+}
+
+function cancelUpdate() {
+    app.curSession.gameForEdit = null;
+    viewCurrentSessionDetails();
+}
+
+function updateGame() {
+    if(validateGame(app.curSession.gameForEdit)) {
+        var gameForEdit = app.curSession.gameForEdit;
+        var index = -1;
+        for(var g in app.curSession.games) {
+            if(gameForEdit.name == app.curSession.games[g].name) {
+                index = g;
+                break;
+            }
+        }
+        if(index != -1) {
+            app.curSession.games[index] = gameForEdit;
+            app.curSession.gameForEdit = null;
+            refreshSessionSummaryOnHome();
+            viewCurrentSessionDetails();
+        }
+    } else {
+        alert('Incomplete Score');
+    }
 }
 
 function showSessionList() {
@@ -270,78 +501,165 @@ function showSessionList() {
             +'</tr>'
         );
     }
+    $('#sessionList_title').empty();
+    $('#sessionList_title').append(
+            '<ol class="breadcrumb">'
+                +'<li class="breadcrumb-item"><a href="#" onclick="goToHome()">Home</a></li>'
+                +'<li class="breadcrumb-item active">Sessions</li>'
+            +'</ol>');
 }
 
-function goBackToSeesionList() {
-    $('#container').attr('currentSection', 'sessionList_section');
-}
-
-function viewSessionDetails() {
-    $('#container').attr('currentSection', 'sessionDetails_section');
-    $('#sessionDetails_games').empty()
-    var id = $(this).parents('tr').attr('id').replace('sessionList_','');
-    var session = null;
+function getSessionForId(sessionId) {
     for(var s in app.sessions) {
-        if(app.sessions[s].id == id) {
-            session = app.sessions[s];
-            break;
+        if(app.sessions[s].id == sessionId) {
+            return app.sessions[s];
         }
     }
+    return null;
+}
+
+function createSessionSummaryTable(session) {
     var playerIdNameMap = {};
     var playerIdCreditMap = {};
     var playerIds = [];
     for(var g in session.games) {
         var game = session.games[g];
-        if(game.status=='In Progress') {
-            continue;
-        }
-        var gameTable = '<table class="table tabled-bordered border-primary table-striped caption-top">'
-                        +'<caption>'+game.name+'</caption>'
-                            +'<thead><tr><th>Player</th>'
-                            //+'<th>Bonus</th><th>Points</th>'
-                            +'<th>Credit</th></tr></thead>'
-                            +'<tbody>';
         for(var c in game.scoreCards) {
             var card = game.scoreCards[c];
-            gameTable += ('<tr>'
-                            +'<td style="text-align:left">'+card.player.name
-                                +(game.winner == card.player.id?'<img src="./trophy-32.png" alt="Winner"/>':'')
-                            +'</td>'
-                            //+'<td>'+card.bonus+'</td>'
-                            //+'<td>'+card.points+'</td>'
-                            +'<td>'+card.gameCredit+'</td>'
-                        +'</tr>');
             if(!playerIdNameMap[card.player.id]) {
                 playerIds.push(card.player.id);
                 playerIdNameMap[card.player.id] = card.player.name;
-                playerIdCreditMap[card.player.id] = card.gameCredit;
+                playerIdCreditMap[card.player.id] = (game.status=='In Progress'?0:card.gameCredit);
             } else {
-                playerIdCreditMap[card.player.id] = playerIdCreditMap[card.player.id] + card.gameCredit;
+                playerIdCreditMap[card.player.id] = playerIdCreditMap[card.player.id] + (game.status=='In Progress'?0:card.gameCredit);
             }
         }
-        gameTable += '</tbody></table>';
-        $('#sessionDetails_games').append(gameTable);
     }
-    var sessionTable =  '<table class="table tabled-bordered border-primary table-striped caption-top">'
-                            +'<caption>Summary of Session '+session.name+'</caption>'
-                            +'<thead><tr><th>Player</th><th>Credit</th></tr></thead>'
-                            +'<tbody>';
+    var sessionTable = '<table class="table tabled-bordered border-primary table-striped"><tbody>';
     for(var p in playerIds) {
         sessionTable += ('<tr>'
-                            +'<td>'+playerIdNameMap[playerIds[p]]+'</td>'
+                            +'<td style="text-align:left">'+playerIdNameMap[playerIds[p]]+'</td>'
                             +'<td>'+playerIdCreditMap[playerIds[p]]+'</td>'
                         +'</tr>');
     }
     sessionTable += '</tbody></table>';
-    $('#sessionDetails_games').prepend(sessionTable);
+    return sessionTable;
+}
+
+function getGamesPlayed(session) {
+    return session.curGame && session.curGame.status == 'In Progress' ? session.games.length -1 : session.games.length;
+}
+
+function loadSessionSummary(session, parentElemSummary) {
+    parentElemSummary.empty();
+    var sessionTable=
+        '<div class="col-sm-12 col-md-6">'
+        +'<div class="card">'
+            +'<div class="card-header">Session Summary ( '+getGamesPlayed(session)+' Games )</div>'
+            +'<div class="card-body p-0">'
+                +'<div class="container"><div class="row"><div class="col p-0">';
+    sessionTable += createSessionSummaryTable(session);
+    sessionTable += '</div></div></div></div></div></div>';
+    parentElemSummary.append(sessionTable);
+}
+
+function loadSessionGames(session, parentElemGames) {
+    parentElemGames.empty();
+    for(var g=session.games.length; g>0 ;g--) {
+        var game = session.games[g-1];
+        if(game.status=='In Progress') {
+            continue;
+        }
+        var gameTable=
+            '<div class="col-sm-12 col-md-6">'
+            +'<div class="card">'
+                +'<div class="card-header">'
+                    +'<div class="container">'
+                        +'<div class="row">'
+                            +'<div class="col text-start">'+game.name+'</div>'
+                            +'<div class="col text-end">'
+                                +'<button type="button" class="btn btn-secondary py-0 editGame" onclick="editGame(\''+game.name+'\')">Edit</button>'
+                            +'</div>'
+                        +'</div>'
+                    +'</div>'
+                +'</div>'
+                +'<div class="card-body p-0">'
+                    +'<div class="container"><div class="row"><div class="col p-0">';
+        gameTable += '<table class="table tabled-bordered border-primary table-striped">'
+                            +'<tbody>';
+        for(var c in game.scoreCards) {
+            var card = game.scoreCards[c];
+            gameTable += ('<tr>'
+                            +'<td style="text-align:left">'
+                                +(game.winner == card.player.id?'<img src="./trophy-32.png" alt="Winner"/>':'')
+                                +'  '+card.player.name
+                            +'</td>'
+                            +'<td>'+card.gameCredit+'</td>'
+                        +'</tr>');
+        }
+        gameTable += '</tbody></table>';
+        gameTable += '</div></div></div></div></div></div>';
+        parentElemGames.append(gameTable);
+    }
+}
+
+function loadSessionDetails(sessionId, parentElemSummary, parentElemGames) {
+    var session = getSessionForId(sessionId);
+    $('#sessionDetails_section').attr('sid',session.id);
+    loadSessionSummary(session, parentElemSummary);
+    loadSessionGames(session, parentElemGames);
+}
+
+//From Nav Path
+function viewDetailsOfSession(sessionId) {
+    $('#container').attr('currentSection', 'sessionDetails_section');
+    var session = getSessionForId(sessionId);
+    $('#sessionDetails_title').empty();
+    $('#sessionDetails_title').append(
+            '<ol class="breadcrumb">'
+                +'<li class="breadcrumb-item"><a href="#" onclick="goToHome()">Home</a></li>'
+                +'<li class="breadcrumb-item"><a href="#" onclick="showSessionList()">Sessions</a></li>'
+                +'<li class="breadcrumb-item active">'+session.name+'</li>'
+            +'</ol>');
+
+    loadSessionDetails(sessionId, $('#sessionDetails_summary'), $('#sessionDetails_games'));
+
+    if(session.status == 'Open') {
+        $('#sessionDetails_reopen').hide();
+        $('#sessionDetails_play').show();
+        $('#sessionDetails_section').removeClass('session-closed');
+    } else {
+        $('#sessionDetails_reopen').show();
+        $('#sessionDetails_play').hide();
+        $('#sessionDetails_section').addClass('session-closed');
+    }
+}
+
+//From Session History
+function viewSessionDetails() {
+    var id = $(this).parents('tr').attr('id').replace('sessionList_','');
+    viewDetailsOfSession(id);
+}
+
+//Details from Home
+function viewCurrentSessionDetails() {
+    viewDetailsOfSession(app.curSession.id);
 }
 
 var app = {
-    nextPlayerId: 1,
+    nextPlayerId: 0,
     nextSessionId: 1,
+    enableKitty: true,
+    kittyPoints: 0,
     players : [],
     sessions: []
 };
+
+function goBackToSeesionList() {
+    $('#container').attr('currentSection', 'sessionList_section');
+}
+
+
 /*
 player
     id
