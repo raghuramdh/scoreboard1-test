@@ -13,6 +13,7 @@ $(document).ready(function(){
     $('#gameBoard').on('input', '.gameBoard_points', onPointsChange);
     $('#gameBoard').on('input', '#gameBoard_credits_0', onKittyCreditsChange);
     $('#gameBoard').on('click', '.scoreCard_winner', setWinner);
+    $('#gameBoard').on('click', '.scoreCard_pname', toggleScoreCard);
     $('#editGameBoard').on('input', '.editGameBoard_bonus', onEditBonus);
     $('#editGameBoard').on('input', '.editGameBoard_points', onEditPoints);
     $('#editGameBoard').on('input', '#editGameBoard_credits_0', onEditKittyCredits);
@@ -20,12 +21,44 @@ $(document).ready(function(){
 });
 
 function init() {
-    $('#newPlayer_text').val('Kitty');
-    addPlayer();
-    //$('#newPlayer_text').val('Raghu Ram');
-    //addPlayer();
-    //$('#newPlayer_text').val('Sirisha');
-    //addPlayer();
+    var storedApp = localStorage.getItem('app');
+    if(storedApp) {
+        app = JSON.parse(storedApp);
+        if(app.players) {
+            for(var i in app.players) {
+                loadPlayer(app.players[i]);
+            }
+        }
+        $('#home_kittyPoints').val(app.kittyPoints);
+        if(app.curSession) {
+            for(var i in app.sessions) {
+                if(app.curSession.id == app.sessions[i].id && app.sessions[i].status=='Open') {
+                    app.curSession = app.sessions[i];
+                    break;
+                }
+            }
+            for(var i in app.curSession.games) {
+                if(app.curSession.games[i].status == 'In Progress') {
+                    app.curSession.curGame = app.curSession.games[i];
+                }
+            }
+            $('#container').removeClass('noSession');
+            $('#container').addClass('hasSession');
+            refreshSessionSummaryOnHome();
+            loadCurGame(app.curSession, app.curSession.curGame);
+            if(app.curSession.curGame.winner) {
+                $('#scoreCard_'+app.curSession.curGame.winner).addClass('winner');
+                $('#gameBoard_points_'+app.curSession.curGame.winner).val('');
+                $('#gameBoard').attr('winnerSelected','true');
+            }
+        }
+        if(app.sessions && app.sessions.length > 0) {
+            $('#sessionList_button').removeAttr('disabled');
+        }
+    } else {
+        $('#newPlayer_text').val('Kitty');
+        addPlayer();
+    }
 }
 
 function goToHome() {
@@ -42,6 +75,10 @@ function openPlayersSetup() {
 
 function releaseNotes() {
     $('#container').attr('currentSection', 'releaseNotes_section');
+}
+
+function saveApp() {
+    localStorage.setItem('app',JSON.stringify(app));
 }
 
 function addPlayer() {
@@ -62,13 +99,28 @@ function addPlayer() {
     players.push(player);
     app.nextPlayerId++;
 
-    if(players.length == 3) {
+    if(app.curSession) {
+        var game = app.curSession.curGame;
+        var card = {};
+        card.player = player;
+        card.gameCredit = 0;
+        card.acive = true;
+        game.scoreCards.push(card);
+        addScoreCard(card);
+    }
+
+    loadPlayer(player);
+    saveApp();
+}
+
+function loadPlayer(player) {
+    if(app.players.length >= 3) {
         $('#startSession_button').removeAttr('disabled');
     }
 
     $('#playerNames > tbody').append(
         '<tr id="player_'+player.id+'">'
-            +'<td>'+pname+'</td>'
+            +'<td>'+player.name+'</td>'
             +'<td>'
                 +(player.id==0?'':'<button type="button" class="btn btn-danger deletePlayer_button">X</button>')
             +'</td>'
@@ -76,15 +128,6 @@ function addPlayer() {
     );
     
     $('#newPlayer_text').val('');
-
-    if(app.curSession) {
-        var game = app.curSession.curGame;
-        var card = {};
-        card.player = player;
-        card.gameCredit = 0;
-        game.scoreCards.push(card);
-        addScoreCard(card);
-    }
 }
 
 function deletePlayer() {
@@ -114,6 +157,8 @@ function deletePlayer() {
         $('#scoreCard_'+playerId).remove();
         calculateCredit();
     }
+
+    saveApp();
 }
 
 function startNewSession() {
@@ -126,10 +171,12 @@ function startNewSession() {
     app.curSession = session;
     app.sessions.push(session);
     newGame();
-    $('#scoreBoard_sessionName').text(session.name);
-    //$('#container').attr('currentSection', 'scoreBoard_section');
     $('#container').removeClass('noSession');
     $('#container').addClass('hasSession');
+    if(app.sessions.length == 6) {
+        app.sessions.shift();
+    }
+    saveApp();
 }
 
 function closeSession() {
@@ -139,6 +186,7 @@ function closeSession() {
     app.curSession = null;
     $('#container').removeClass('hasSession');
     $('#container').addClass('noSession');
+    saveApp();
 }
 
 function reopenSession() {
@@ -156,6 +204,8 @@ function reopenSession() {
     $('#sessionDetails_reopen').hide();
     $('#sessionDetails_play').show();
     $('#sessionDetails_section').removeClass('session-closed');
+
+    saveApp();
 }
 
 function setKittyPoints() {
@@ -167,6 +217,7 @@ function setKittyPoints() {
             calculateCredit();
         }
     }
+    saveApp();
 }
 
 function getGameForName(gameName) {
@@ -237,18 +288,27 @@ function newGame() {
         card.player = app.players[p];
         card.points = null;
         card.bonus = null;
+        card.active = true;
         if(app.players[p].id == 0) {
             card.gameCredit = app.kittyPoints;
         } else {
             card.gameCredit = 0;
         }
         scoreCards.push(card);
-        addScoreCard(card);
+        //addScoreCard(card);
     }
     game.scoreCards = scoreCards;
     
+    loadCurGame(session, game);
+}
+
+function loadCurGame(session, game) {
     if(app.sessions.length == 1 && session.games.length == 1) {
         $('#sessionList_button').removeAttr('disabled');
+    }
+
+    for(var i in game.scoreCards) {
+        addScoreCard(game.scoreCards[i]);
     }
 
     $('#scoreBoard_title').empty();
@@ -286,16 +346,18 @@ function addScoreCard(scoreCard, gameTableName, game) {
             +'</tr>'
         );
     } else {
+        var cls = scoreCard.active? 'activeCard': 'inactiveCard';
+        cls += (game && game.winner==scoreCard.player.id ?' winner':'');
         $('#'+gameTableName+' > tbody').append(
-            '<tr id="scoreCard_'+scoreCard.player.id+'"'+(game && game.winner==scoreCard.player.id?' class="winner" ':'')+'>'
+            '<tr id="scoreCard_'+scoreCard.player.id+'" class="'+cls+'">'
                 +'<td><input type="radio" name="scoreCard_winner" class="scoreCard_winner"'+(game && game.winner==scoreCard.player.id?' checked="true" ':'')+'/></td>'
-                +'<td style="text-align:left">'+scoreCard.player.name+'</td>'
+                +'<td style="text-align:left"><span class="scoreCard_pname">'+scoreCard.player.name+'</span></td>'
                 +'<td>'
                     +'<input type="text" size="3" class="'+gameTableName+'_points" id="'+gameTableName+'_points_'+scoreCard.player.id+'" value="'+(scoreCard.points==null?'':scoreCard.points)+'"/>'
                     +'<img src="./trophy-32.png" alt="Winner" class="winner_logo" />'
                 +'</td>'
                 +'<td><input type="text" size="3" class="'+gameTableName+'_bonus" id="'+gameTableName+'_bonus_'+scoreCard.player.id+'" value="'+(scoreCard.bonus==null?'':scoreCard.bonus)+'"/></td>'
-                +'<td id="'+gameTableName+'_gameCredit_'+scoreCard.player.id+'">'+scoreCard.gameCredit+'</td>'
+                +'<td class="scoreCard_credit" id="'+gameTableName+'_gameCredit_'+scoreCard.player.id+'">'+(scoreCard.active?scoreCard.gameCredit:'')+'</td>'
             +'</tr>'
         );
     }
@@ -311,6 +373,31 @@ function setWinner() {
     $('#gameBoard_points_'+id).val('');
     $('#gameBoard').attr('winnerSelected','true');
     calculateCreditOnPointsChange(id);
+    saveApp();
+}
+
+function toggleScoreCard() {
+    var id = $(this).parents('tr').attr('id').replace('scoreCard_', '');
+    var sc = null
+    for(var i in app.curSession.curGame.scoreCards) {
+        if(id == app.curSession.curGame.scoreCards[i].player.id) {
+            sc = app.curSession.curGame.scoreCards[i];
+            if(sc.active) {
+                sc.active = false;
+                $(this).parents('tr').removeClass('activeCard');
+                $(this).parents('tr').addClass('inactiveCard');
+            } else {
+                sc.active = true;
+                $(this).parents('tr').removeClass('inactiveCard');
+                $(this).parents('tr').addClass('activeCard');
+            }
+            break;
+        }
+    }
+    calculateCreditForgame(app.curSession.curGame, false);
+    if(sc && !sc.active) {
+        $(this).parents('tr').find('.scoreCard_credit').text('');
+    }
 }
 
 function onEditBonus() {
@@ -386,13 +473,14 @@ function calculateCreditForgame(game, isEdit) {
     var kittyPoints = isEdit?Number($('#editGameBoard_credits_0').val()):app.kittyPoints;
     var cards = game.scoreCards;
     for(var i in cards) {
-        if(i == 0) {
+        if(i == 0 || !cards[i].active) {
             continue;
         }
+        
         var bcredit = 0;
         var pcredit = 0;
         for(var j in cards) {
-            if(j == 0) {
+            if(j == 0 || !cards[j].active) {
                 continue;
             }
             if(cards[j].player.id == cards[i].player.id) {
@@ -416,6 +504,7 @@ function calculateCreditForgame(game, isEdit) {
             $('#gameBoard_gameCredit_'+cards[i].player.id).text(cards[i].gameCredit);
         }
     }
+    saveApp();
 }
 
 function calculateCredit() {
@@ -440,6 +529,7 @@ function resetGame() {
     $('#gameBoard input[type="radio"]').prop("checked", false);
     $('#gameBoard').attr('winnerSelected','false');
     calculateCredit();
+    saveApp();
 }
 
 function nextGame() {
@@ -447,6 +537,7 @@ function nextGame() {
         app.curSession.curGame.status = 'Done';
         newGame();
         viewCurrentSessionDetails();
+        saveApp();
     } else {
         alert('Incomplete Score');
     }
@@ -455,7 +546,7 @@ function nextGame() {
 function validateGame(game) {
     var cards = game.scoreCards;
     for(var i in cards) {
-        if(i == 0) {
+        if(i == 0 || !cards[i].active) {
             continue;
         }
         if(isEmpty(cards[i].bonus) || isEmpty(cards[i].points)) {
@@ -565,6 +656,7 @@ function loadSessionSummary(session, parentElemSummary) {
 
 function loadSessionGames(session, parentElemGames) {
     parentElemGames.empty();
+    var isLastGame = true;
     for(var g=session.games.length; g>0 ;g--) {
         var game = session.games[g-1];
         if(game.status=='In Progress') {
@@ -578,7 +670,7 @@ function loadSessionGames(session, parentElemGames) {
                         +'<div class="row">'
                             +'<div class="col text-start">'+game.name+'</div>'
                             +'<div class="col text-end">'
-                                +'<button type="button" class="btn btn-secondary py-0 editGame" onclick="editGame(\''+game.name+'\')">Edit</button>'
+                                +(isLastGame?'<button type="button" class="btn btn-secondary py-0 editGame" onclick="editGame(\''+game.name+'\')">Edit</button>':'')
                             +'</div>'
                         +'</div>'
                     +'</div>'
@@ -588,6 +680,9 @@ function loadSessionGames(session, parentElemGames) {
         gameTable += '<table class="table tabled-bordered border-primary table-striped">'
                             +'<tbody>';
         for(var c in game.scoreCards) {
+            if(!game.scoreCards[c].active) {
+                continue;
+            }
             var card = game.scoreCards[c];
             gameTable += ('<tr>'
                             +'<td style="text-align:left">'
@@ -600,6 +695,7 @@ function loadSessionGames(session, parentElemGames) {
         gameTable += '</tbody></table>';
         gameTable += '</div></div></div></div></div></div>';
         parentElemGames.append(gameTable);
+        isLastGame = false;
     }
 }
 
@@ -652,7 +748,8 @@ var app = {
     enableKitty: true,
     kittyPoints: 0,
     players : [],
-    sessions: []
+    sessions: [],
+    curSession: null
 };
 
 function goBackToSeesionList() {

@@ -53,3 +53,14 @@ tr.winner .editGameBoard_points,
 #playersSetup_section .card-header {
     background-color: lightblue;
 }
+
+.inactiveCard input,
+.inactiveCard img {
+    display:none
+}
+.inactiveCard .scoreCard_pname {
+    font-weight: normal;
+}
+.activeCard .scoreCard_pname {
+    font-weight: bold;
+}
