@@ -7,6 +7,7 @@ $(document).ready(function(){
     $('#updateGame_button').click(updateGame);
     $('#updateCancel_button').click(cancelUpdate);
     $('#addPlayer_button').click(addPlayer);
+	$('#wa_button').click(sendText);
     $('body').on('click', '.deletePlayer_button', deletePlayer); 
     $('#sessionList').on('click', 'td', viewSessionDetails);
     $('#gameBoard').on('input', '.gameBoard_bonus', calculateCreditOnBonusChange);
@@ -756,6 +757,9 @@ function goBackToSeesionList() {
     $('#container').attr('currentSection', 'sessionList_section');
 }
 
+function sendText() {
+	window.open('https://wa.me/918897994040?text=hello');
+}
 
 /*
 player
