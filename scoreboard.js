@@ -759,7 +759,6 @@ function goBackToSeesionList() {
 
 function sendText() {
 	window.open('https://wa.me/919247591036?text=hello 2');
-	window.open('https://wa.me/916546546465?text=hello 1');
 	window.open('https://wa.me/918897994040?text=hello');
 }
 
