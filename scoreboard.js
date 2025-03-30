@@ -759,8 +759,32 @@ function goBackToSeesionList() {
 
 function sendText() {
 	//window.open('https://wa.me/scoreboard?text=hello 123');
-	navigator.clipboard.writeText('hello from scoreboard');
-	window.open('https://chat.whatsapp.com/LIaQQZwgX0rHQQyX9T1BKQ','_blank');
+	
+	
+	var message='hello from scoreboard';
+	if ('clipboard' in navigator) {
+		navigator.clipboard.writeText(message)
+		.then(() => {
+		  console.log('Text copied');
+		  window.open('https://chat.whatsapp.com/LIaQQZwgX0rHQQyX9T1BKQ','_blank');
+		})
+		.catch((err) => console.error(err.name, err.message));
+	} else {
+		const textArea = document.createElement('textarea');
+		textArea.value = message;
+		textArea.style.opacity = 0;
+		document.body.appendChild(textArea);
+		textArea.focus();
+		textArea.select();
+		try {
+		  const success = document.execCommand('copy');
+		  console.log(`Text copy was ${success ? 'successful' : 'unsuccessful'}.`);
+		  window.open('https://chat.whatsapp.com/LIaQQZwgX0rHQQyX9T1BKQ','_blank');
+		} catch (err) {
+		  console.error(err.name, err.message);
+		}
+		document.body.removeChild(textArea);
+	}
 }
 
 /*
