@@ -758,7 +758,7 @@ function goBackToSeesionList() {
 }
 
 function sendText() {
-	window.open('https://wa.me/919247591036?text=hello 123');
+	window.open('https://wa.me/LIaQQZwgX0rHQQyX9T1BKQ?text=hello 123');
 }
 
 /*
