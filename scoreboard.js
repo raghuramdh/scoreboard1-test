@@ -759,7 +759,8 @@ function goBackToSeesionList() {
 
 function sendText() {
 	//window.open('https://wa.me/scoreboard?text=hello 123');
-	window.open('https://chat.whatsapp.com/LIaQQZwgX0rHQQyX9T1BKQ?text=hello');
+	navigator.clipboard.writeText(message);
+	window.open('https://chat.whatsapp.com/LIaQQZwgX0rHQQyX9T1BKQ','_blank');
 }
 
 /*
